@@ -10,7 +10,7 @@ set -e
 PANEL_DIR="/var/www/pterodactyl"
 BASE_BACKUP_DIR="/var/backups/ptero-security"
 TMP_DIR="/tmp/ptero-security"
-ZIP_URL="https://raw.githubusercontent.com/USERNAME/REPO/main/security.zip"
+ZIP_URL="https://raw.githubusercontent.com/Gusionly/lynz-jmk/main/security.zip"
 
 # ===============================
 # CHECK ROOT
