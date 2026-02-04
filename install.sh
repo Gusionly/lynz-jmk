@@ -2,6 +2,7 @@
 # =========================================
 # Pterodactyl Security Patch Installer
 # Menu Version (Install / Restore)
+# FULL FINAL FIXED VERSION
 # =========================================
 
 set -e
@@ -9,7 +10,6 @@ set -e
 PANEL_DIR="/var/www/pterodactyl"
 BASE_BACKUP_DIR="/var/backups/ptero-security"
 TMP_DIR="/tmp/ptero-security"
-
 ZIP_URL="https://raw.githubusercontent.com/USERNAME/REPO/main/security.zip"
 
 # ===============================
@@ -29,11 +29,16 @@ if [ ! -d "$PANEL_DIR" ]; then
 fi
 
 # ===============================
+# DEPENDENCIES
+# ===============================
+apt install -y wget unzip >/dev/null 2>&1
+
+# ===============================
 # FUNCTIONS
 # ===============================
 backup_file() {
   if [ -f "$1" ]; then
-    mkdir -p "$BACKUP_DIR$(dirname $1)"
+    mkdir -p "$BACKUP_DIR$(dirname "$1")"
     cp "$1" "$BACKUP_DIR$1"
   fi
 }
@@ -45,20 +50,54 @@ clear_cache() {
   php artisan route:clear
 }
 
-install_security() {
-  BACKUP_DIR="$BASE_BACKUP_DIR/$(date +%Y%m%d-%H%M%S)"
-
-  echo "[INFO] Creating backup at $BACKUP_DIR"
-  mkdir -p "$BACKUP_DIR"
-
+download_and_extract() {
   echo "[INFO] Downloading security.zip..."
   rm -rf "$TMP_DIR"
   mkdir -p "$TMP_DIR"
   cd "$TMP_DIR"
-  wget -q "$ZIP_URL" -O security.zip
-  unzip -q security.zip
 
-  echo "[INFO] Backing up files..."
+  if ! wget "$ZIP_URL" -O security.zip; then
+    echo "[ERROR] Failed to download security.zip"
+    exit 1
+  fi
+
+  if ! unzip -o security.zip >/dev/null; then
+    echo "[ERROR] Failed to extract security.zip"
+    exit 1
+  fi
+
+  # ===============================
+  # VALIDATE FILES
+  # ===============================
+  REQUIRED_FILES=(
+    "FileController.php"
+    "ServerController.php"
+    "UserController.php"
+    "delete.blade.php"
+    "new.blade.php"
+    "view.blade.php"
+    "nodes/index.blade.php"
+    "settings/index.blade.php"
+  )
+
+  for file in "${REQUIRED_FILES[@]}"; do
+    if [ ! -f "$file" ]; then
+      echo "[ERROR] Missing file in security.zip: $file"
+      exit 1
+    fi
+  done
+
+  echo "[INFO] security.zip validated successfully"
+}
+
+install_security() {
+  BACKUP_DIR="$BASE_BACKUP_DIR/$(date +%Y%m%d-%H%M%S)"
+  echo "[INFO] Creating backup at $BACKUP_DIR"
+  mkdir -p "$BACKUP_DIR"
+
+  download_and_extract
+
+  echo "[INFO] Backing up original files..."
   backup_file "$PANEL_DIR/app/Http/Controllers/Api/Client/Servers/FileController.php"
   backup_file "$PANEL_DIR/app/Http/Controllers/Api/Application/Servers/ServerController.php"
   backup_file "$PANEL_DIR/app/Http/Controllers/Api/Application/Users/UserController.php"
@@ -68,15 +107,15 @@ install_security() {
   backup_file "$PANEL_DIR/resources/views/admin/nodes/index.blade.php"
   backup_file "$PANEL_DIR/resources/views/admin/settings/index.blade.php"
 
-  echo "[INFO] Installing security files..."
+  echo "[INFO] Installing security patch..."
   cp FileController.php "$PANEL_DIR/app/Http/Controllers/Api/Client/Servers/FileController.php"
   cp ServerController.php "$PANEL_DIR/app/Http/Controllers/Api/Application/Servers/ServerController.php"
   cp UserController.php "$PANEL_DIR/app/Http/Controllers/Api/Application/Users/UserController.php"
   cp delete.blade.php "$PANEL_DIR/resources/views/admin/servers/delete.blade.php"
   cp new.blade.php "$PANEL_DIR/resources/views/admin/users/new.blade.php"
   cp view.blade.php "$PANEL_DIR/resources/views/admin/users/view.blade.php"
-  cp index.blade.php "$PANEL_DIR/resources/views/admin/nodes/index.blade.php"
-  cp index.blade.php "$PANEL_DIR/resources/views/admin/settings/index.blade.php"
+  cp nodes/index.blade.php "$PANEL_DIR/resources/views/admin/nodes/index.blade.php"
+  cp settings/index.blade.php "$PANEL_DIR/resources/views/admin/settings/index.blade.php"
 
   chown -R www-data:www-data "$PANEL_DIR"
 
