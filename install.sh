@@ -2,7 +2,7 @@
 # =========================================
 # Pterodactyl Security Patch Installer
 # Menu Version (Install / Restore)
-# FULL FINAL FIXED VERSION
+# Lynzz Official © 2020 - 2025
 # =========================================
 
 set -e
@@ -162,6 +162,7 @@ restore_security() {
 clear
 echo "====================================="
 echo " PTERODACTYL SECURITY INSTALLER"
+echo " Lynzz Official © 2020 - 2025"
 echo "====================================="
 echo "1) Pasang Security"
 echo "2) Hapus Security (Restore Backup)"
